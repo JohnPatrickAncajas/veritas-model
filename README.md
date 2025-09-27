@@ -107,3 +107,7 @@ veritas-model/
 
 **Recommended workflow:**  
 Download → Raw → Train/Val/Test → Train → Test → Predict
+
+**Useful commands:**  
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\effnet-env\Scripts\Activate.ps1
