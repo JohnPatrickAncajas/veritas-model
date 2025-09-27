@@ -1,0 +1,6 @@
+effnet-env
+kaggle.json
+__pycache__/
+.vscode/
+data
+kaggle_cache/
