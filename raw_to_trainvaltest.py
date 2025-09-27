@@ -18,26 +18,25 @@ SPLIT_RATIO = (0.7, 0.2, 0.1)  # train, val, test
 # Helper function to split
 # -----------------------------
 def split_data(raw_path, train_dir, val_dir, test_dir, split_ratio=(0.7, 0.2, 0.1)):
-    # Create destination folders
     class_name = os.path.basename(raw_path)
+    # Clear and recreate destination folders
     for folder in [train_dir, val_dir, test_dir]:
-        os.makedirs(os.path.join(folder, class_name), exist_ok=True)
+        class_folder = os.path.join(folder, class_name)
+        if os.path.exists(class_folder):
+            shutil.rmtree(class_folder)
+        os.makedirs(class_folder, exist_ok=True)
 
-    # List all images
     files = [f for f in os.listdir(raw_path) if f.lower().endswith((".jpg", ".jpeg", ".png"))]
     random.shuffle(files)
 
     n_total = len(files)
     n_train = int(split_ratio[0] * n_total)
     n_val = int(split_ratio[1] * n_total)
-    n_test = n_total - n_train - n_val
 
-    # Split files
     train_files = files[:n_train]
     val_files = files[n_train:n_train + n_val]
     test_files = files[n_train + n_val:]
 
-    # Copy files
     for f in train_files:
         shutil.copy2(os.path.join(raw_path, f), os.path.join(train_dir, class_name, f))
     for f in val_files:
