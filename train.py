@@ -1,3 +1,4 @@
+# train.py
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -5,8 +6,19 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 from efficientnet_pytorch import EfficientNet
 import os
-import torch
 
+# ---------------------
+# Import config
+# ---------------------
+from config import (
+    TRAIN_DIR, VAL_DIR, TEST_DIR,
+    CLASSES, BATCH_SIZE, NUM_EPOCHS, LEARNING_RATE,
+    MODEL_NAME, MODEL_SAVE_DIR
+)
+
+# ---------------------
+# GPU Check
+# ---------------------
 if torch.cuda.is_available():
     print("✅ GPU is available!")
     print(f"Device count: {torch.cuda.device_count()}")
@@ -15,19 +27,7 @@ else:
     print("⚠️ GPU not available, using CPU.")
 
 # ---------------------
-# Paths & Hyperparams
-# ---------------------
-train_dir = "data/train"
-val_dir = "data/val"
-test_dir = "data/test"
-
-batch_size = 16
-num_epochs = 10
-learning_rate = 3e-4
-num_classes = 2
-
-# ---------------------
-# Transforms (RGB, data augmentation)
+# Transforms (with augmentation on train)
 # ---------------------
 normalize = transforms.Normalize(
     mean=[0.485, 0.456, 0.406],
@@ -52,15 +52,15 @@ val_test_transforms = transforms.Compose([
 # ---------------------
 # Datasets & Loaders
 # ---------------------
-train_dataset = datasets.ImageFolder(train_dir, transform=train_transforms)
-val_dataset = datasets.ImageFolder(val_dir, transform=val_test_transforms)
-test_dataset = datasets.ImageFolder(test_dir, transform=val_test_transforms)
+train_dataset = datasets.ImageFolder(TRAIN_DIR, transform=train_transforms)
+val_dataset   = datasets.ImageFolder(VAL_DIR, transform=val_test_transforms)
+test_dataset  = datasets.ImageFolder(TEST_DIR, transform=val_test_transforms)
 
-train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
-test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
+val_loader   = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False)
+test_loader  = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
-print("Classes:", train_dataset.classes)
+print("Classes (from config):", CLASSES)
 print("Train samples:", len(train_dataset))
 print("Val samples:", len(val_dataset))
 print("Test samples:", len(test_dataset))
@@ -72,19 +72,19 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", device)
 
 model = EfficientNet.from_pretrained('efficientnet-b0')
-model._fc = nn.Linear(model._fc.in_features, num_classes)
+model._fc = nn.Linear(model._fc.in_features, len(CLASSES))
 model = model.to(device)
 
 # ---------------------
 # Loss & Optimizer
 # ---------------------
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
 # ---------------------
 # Training Loop
 # ---------------------
-for epoch in range(num_epochs):
+for epoch in range(NUM_EPOCHS):
     model.train()
     running_loss = 0.0
     correct = 0
@@ -120,7 +120,7 @@ for epoch in range(num_epochs):
             val_correct += predicted.eq(labels).sum().item()
     val_acc = val_correct / val_total * 100
 
-    print(f"Epoch [{epoch+1}/{num_epochs}] "
+    print(f"Epoch [{epoch+1}/{NUM_EPOCHS}] "
           f"Train Loss: {epoch_loss:.4f} "
           f"Train Acc: {epoch_acc:.2f}% "
           f"Val Acc: {val_acc:.2f}%")
@@ -144,8 +144,7 @@ print(f"Test Accuracy: {test_acc:.2f}%")
 # ---------------------
 # Save model
 # ---------------------
-model_dir = "models"
-os.makedirs(model_dir, exist_ok=True)
-model_path = os.path.join(model_dir, "efficientnet_ai_real_1k.pth")
+os.makedirs(MODEL_SAVE_DIR, exist_ok=True)
+model_path = os.path.join(MODEL_SAVE_DIR, f"{MODEL_NAME}.pth")
 torch.save(model.state_dict(), model_path)
 print(f"✅ Model saved to {model_path}")

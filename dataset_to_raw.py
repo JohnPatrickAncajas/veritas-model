@@ -3,31 +3,39 @@ import shutil
 import random
 
 # -----------------------------
-# Config / Editable variables
+# Config import
 # -----------------------------
-PROJECT_PATH = r"C:\Users\Patrick\Documents\GitHub\veritas-model"
-KAGGLE_CACHE = os.path.join(PROJECT_PATH, "kaggle_cache")
-RAW_AI_PATH = os.path.join(PROJECT_PATH, "data", "raw", "ai")
-RAW_REAL_PATH = os.path.join(PROJECT_PATH, "data", "raw", "real")
+from config import (
+    PROJECT_PATH,
+    KAGGLE_CACHE,
+    RAW_DIR,
+    CLASSES,
+    MAX_RAW_IMAGES,
+)
 
-# Number of images to select
-NUM_AI_IMAGES = 1000
-NUM_REAL_IMAGES = 1000
+# Map dataset sources for each class (using config.CLASSES order)
+CATEGORIES = {
+    "2d": "2D",
+    "3d": "3D",
+    "ai": "AI-face-detection-Dataset/AI",
+    "real": "real_and_fake_face/training_real",
+}
 
 # -----------------------------
-# Setup
+# Setup: clear old raw folders
 # -----------------------------
-# Clear old raw folders
-for folder in [RAW_AI_PATH, RAW_REAL_PATH]:
-    if os.path.exists(folder):
-        shutil.rmtree(folder)
-    os.makedirs(folder, exist_ok=True)
+if os.path.exists(RAW_DIR):
+    shutil.rmtree(RAW_DIR)
+os.makedirs(RAW_DIR, exist_ok=True)
+
+for category in CLASSES:
+    os.makedirs(os.path.join(RAW_DIR, category), exist_ok=True)
 
 # -----------------------------
 # Function to select & copy images
 # -----------------------------
-def select_and_copy(base_cache_path, dest_folder, num_images, subfolder=None):
-    base_path = base_cache_path if subfolder is None else os.path.join(base_cache_path, subfolder)
+def select_and_copy(base_cache_path, subfolder, dest_folder, num_images):
+    base_path = os.path.join(base_cache_path, subfolder)
 
     files = []
     for root, _, filenames in os.walk(base_path):
@@ -37,7 +45,7 @@ def select_and_copy(base_cache_path, dest_folder, num_images, subfolder=None):
 
     if len(files) == 0:
         print(f"⚠️ No images found in {base_path}. Check folder path!")
-        return
+        return 0
 
     # Randomly select specified number of images
     selected_files = random.sample(files, min(num_images, len(files)))
@@ -47,12 +55,18 @@ def select_and_copy(base_cache_path, dest_folder, num_images, subfolder=None):
         shutil.copy2(f, dest_folder)
 
     print(f"✅ {len(selected_files)} images copied to {dest_folder}")
+    return len(selected_files)
 
 # -----------------------------
-# Select images
+# Balanced allocation
 # -----------------------------
-# For AI dataset
-select_and_copy(KAGGLE_CACHE, RAW_AI_PATH, NUM_AI_IMAGES, subfolder="AI-face-detection-Dataset/AI")
+per_class = MAX_RAW_IMAGES // len(CLASSES)
+total_selected = 0
 
-# For Real dataset
-select_and_copy(KAGGLE_CACHE, RAW_REAL_PATH, NUM_REAL_IMAGES, subfolder="real_and_fake_face/training_real")
+for category in CLASSES:
+    subfolder = CATEGORIES[category]
+    dest_folder = os.path.join(RAW_DIR, category)
+    copied = select_and_copy(KAGGLE_CACHE, subfolder, dest_folder, per_class)
+    total_selected += copied
+
+print(f"🎉 Total images copied: {total_selected} (limit {MAX_RAW_IMAGES})")

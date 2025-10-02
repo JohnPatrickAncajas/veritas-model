@@ -1,3 +1,4 @@
+# test.py
 import torch
 from torchvision import transforms
 from PIL import Image
@@ -5,25 +6,27 @@ from efficientnet_pytorch import EfficientNet
 import os
 
 # ------------------------
-# CONFIG
+# Import config
 # ------------------------
-PROJECT_PATH = r"C:\Users\Patrick\Documents\GitHub\veritas-model"
-TEST_DIR = os.path.join(PROJECT_PATH, "data", "test")
-MODEL_PATH = os.path.join(PROJECT_PATH, "models", "efficientnet_ai_real_1k.pth")
+from config import (
+    TEST_DIR, MODEL_SAVE_DIR, MODEL_NAME,
+    CLASSES
+)
 
-# Classes (must match your folder names in test/)
-classes = ["ai", "real"]
-
+# ------------------------
 # Device
+# ------------------------
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 
 # ------------------------
 # Load model
 # ------------------------
+model_path = os.path.join(MODEL_SAVE_DIR, f"{MODEL_NAME}.pth")
+
 model = EfficientNet.from_pretrained('efficientnet-b0')
-model._fc = torch.nn.Linear(model._fc.in_features, len(classes))
-model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
+model._fc = torch.nn.Linear(model._fc.in_features, len(CLASSES))
+model.load_state_dict(torch.load(model_path, map_location=device))
 model = model.to(device)
 model.eval()
 
@@ -31,7 +34,7 @@ model.eval()
 # Image preprocessing
 # ------------------------
 transform = transforms.Compose([
-    transforms.Lambda(lambda x: x.convert("RGB")),  # ensures 3 channels
+    transforms.Lambda(lambda x: x.convert("RGB")),  # ensures RGB
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.485,0.456,0.406], std=[0.229,0.224,0.225])
@@ -43,7 +46,7 @@ transform = transforms.Compose([
 total_correct = 0
 total_images = 0
 
-for cls in classes:
+for cls in CLASSES:
     folder_path = os.path.join(TEST_DIR, cls)
     if not os.path.exists(folder_path):
         print(f"⚠️ Folder not found: {folder_path}, skipping...")
@@ -62,14 +65,20 @@ for cls in classes:
                 output = model(image)
                 pred = torch.argmax(output, 1).item()
 
-            if pred == classes.index(cls):
+            if pred == CLASSES.index(cls):
                 correct += 1
             count += 1
 
     total_correct += correct
     total_images += count
-    print(f"{cls.upper()} folder: Accuracy = {correct}/{count} ({correct/count*100:.2f}%)")
+
+    if count > 0:
+        print(f"{cls.upper()} folder: Accuracy = {correct}/{count} ({correct/count*100:.2f}%)")
+    else:
+        print(f"{cls.upper()} folder: No images found, skipped.")
 
 # Overall accuracy
 if total_images > 0:
-    print(f"\nOverall Accuracy: {total_correct}/{total_images} ({total_correct/total_images*100:.2f}%)")
+    print(f"\n📊 Overall Accuracy: {total_correct}/{total_images} ({total_correct/total_images*100:.2f}%)")
+else:
+    print("❌ No test images found in any class folders.")

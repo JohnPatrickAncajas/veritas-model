@@ -108,6 +108,6 @@ veritas-model/
 **Recommended workflow:**  
 Download → Raw → Train/Val/Test → Train → Test → Predict
 
-**Useful commands:**  
+**Useful commands (Like execute it everytime you open the terminal so the thing can work):**  
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\effnet-env\Scripts\Activate.ps1
