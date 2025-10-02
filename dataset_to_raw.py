@@ -8,17 +8,20 @@ import random
 from config import (
     PROJECT_PATH,
     KAGGLE_CACHE,
-    RAW_DIR,
+    GOOGLE_CACHE,
     CLASSES,
     MAX_RAW_IMAGES,
 )
 
-# Map dataset sources for each class (using config.CLASSES order)
+# Set RAW_DIR inside data/raw
+RAW_DIR = os.path.join(PROJECT_PATH, "data", "raw")
+
+# Map dataset sources for each class
 CATEGORIES = {
-    "2d": "2D",
-    "3d": "3D",
-    "ai": "AI-face-detection-Dataset/AI",
-    "real": "real_and_fake_face/training_real",
+    "2d": "2D",                                  # From google_cache
+    "3d": "3D",                                  # From google_cache (may have subfolders)
+    "ai": "AI-face-detection-Dataset/AI",        # From kaggle_cache
+    "real": "real_and_fake_face/training_real",  # From kaggle_cache
 }
 
 # -----------------------------
@@ -47,10 +50,10 @@ def select_and_copy(base_cache_path, subfolder, dest_folder, num_images):
         print(f"⚠️ No images found in {base_path}. Check folder path!")
         return 0
 
-    # Randomly select specified number of images
+    # Shuffle and pick specified number of images
     selected_files = random.sample(files, min(num_images, len(files)))
 
-    # Copy selected images to destination
+    # Copy selected images to destination folder
     for f in selected_files:
         shutil.copy2(f, dest_folder)
 
@@ -58,15 +61,18 @@ def select_and_copy(base_cache_path, subfolder, dest_folder, num_images):
     return len(selected_files)
 
 # -----------------------------
-# Balanced allocation
+# Balanced allocation: MAX_RAW_IMAGES per class
 # -----------------------------
-per_class = MAX_RAW_IMAGES // len(CLASSES)
 total_selected = 0
 
 for category in CLASSES:
     subfolder = CATEGORIES[category]
+
+    # Use google_cache for 2d/3d, kaggle_cache for ai/real
+    base_cache = GOOGLE_CACHE if category in ["2d", "3d"] else KAGGLE_CACHE
+
     dest_folder = os.path.join(RAW_DIR, category)
-    copied = select_and_copy(KAGGLE_CACHE, subfolder, dest_folder, per_class)
+    copied = select_and_copy(base_cache, subfolder, dest_folder, MAX_RAW_IMAGES)
     total_selected += copied
 
-print(f"🎉 Total images copied: {total_selected} (limit {MAX_RAW_IMAGES})")
+print(f"🎉 Total images copied: {total_selected} (max {MAX_RAW_IMAGES * len(CLASSES)})")

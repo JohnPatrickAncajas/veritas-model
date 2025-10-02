@@ -19,15 +19,17 @@ from config import (
 # ---------------------
 # GPU Check
 # ---------------------
-if torch.cuda.is_available():
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+if device.type == 'cuda':
     print("✅ GPU is available!")
     print(f"Device count: {torch.cuda.device_count()}")
     print(f"Device name: {torch.cuda.get_device_name(0)}")
 else:
     print("⚠️ GPU not available, using CPU.")
+print("Using device:", device)
 
 # ---------------------
-# Transforms (with augmentation on train)
+# Transforms (train augmentation)
 # ---------------------
 normalize = transforms.Normalize(
     mean=[0.485, 0.456, 0.406],
@@ -50,7 +52,7 @@ val_test_transforms = transforms.Compose([
 ])
 
 # ---------------------
-# Datasets & Loaders
+# Datasets & DataLoaders
 # ---------------------
 train_dataset = datasets.ImageFolder(TRAIN_DIR, transform=train_transforms)
 val_dataset   = datasets.ImageFolder(VAL_DIR, transform=val_test_transforms)
@@ -66,11 +68,8 @@ print("Val samples:", len(val_dataset))
 print("Test samples:", len(test_dataset))
 
 # ---------------------
-# Device & Model
+# Model
 # ---------------------
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print("Using device:", device)
-
 model = EfficientNet.from_pretrained('efficientnet-b0')
 model._fc = nn.Linear(model._fc.in_features, len(CLASSES))
 model = model.to(device)
@@ -109,24 +108,29 @@ for epoch in range(NUM_EPOCHS):
 
     # Validation
     model.eval()
+    val_loss = 0.0
     val_correct = 0
     val_total = 0
     with torch.no_grad():
         for images, labels in val_loader:
             images, labels = images.to(device), labels.to(device)
             outputs = model(images)
+            loss = criterion(outputs, labels)
+            val_loss += loss.item() * images.size(0)
             _, predicted = outputs.max(1)
             val_total += labels.size(0)
             val_correct += predicted.eq(labels).sum().item()
+    val_loss /= len(val_dataset)
     val_acc = val_correct / val_total * 100
 
     print(f"Epoch [{epoch+1}/{NUM_EPOCHS}] "
           f"Train Loss: {epoch_loss:.4f} "
           f"Train Acc: {epoch_acc:.2f}% "
+          f"Val Loss: {val_loss:.4f} "
           f"Val Acc: {val_acc:.2f}%")
 
 # ---------------------
-# Test accuracy
+# Test Accuracy
 # ---------------------
 model.eval()
 test_correct = 0
@@ -145,6 +149,6 @@ print(f"Test Accuracy: {test_acc:.2f}%")
 # Save model
 # ---------------------
 os.makedirs(MODEL_SAVE_DIR, exist_ok=True)
-model_path = os.path.join(MODEL_SAVE_DIR, f"{MODEL_NAME}.pth")
+model_path = os.path.join(MODEL_SAVE_DIR, MODEL_NAME)
 torch.save(model.state_dict(), model_path)
 print(f"✅ Model saved to {model_path}")

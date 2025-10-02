@@ -4,3 +4,5 @@ __pycache__/
 .vscode/
 data
 kaggle_cache/
+google_cache/
+google_zip/

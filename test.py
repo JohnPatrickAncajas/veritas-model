@@ -1,4 +1,3 @@
-# test.py
 import torch
 from torchvision import transforms
 from PIL import Image
@@ -8,10 +7,7 @@ import os
 # ------------------------
 # Import config
 # ------------------------
-from config import (
-    TEST_DIR, MODEL_SAVE_DIR, MODEL_NAME,
-    CLASSES
-)
+from config import TEST_DIR, MODEL_SAVE_DIR, MODEL_NAME, CLASSES
 
 # ------------------------
 # Device
@@ -24,7 +20,8 @@ print(f"Using device: {device}")
 # ------------------------
 model_path = os.path.join(MODEL_SAVE_DIR, f"{MODEL_NAME}.pth")
 
-model = EfficientNet.from_pretrained('efficientnet-b0')
+# Use from_name to avoid downloading pretrained weights
+model = EfficientNet.from_name('efficientnet-b0')
 model._fc = torch.nn.Linear(model._fc.in_features, len(CLASSES))
 model.load_state_dict(torch.load(model_path, map_location=device))
 model = model.to(device)
@@ -58,8 +55,12 @@ for cls in CLASSES:
     for filename in os.listdir(folder_path):
         if filename.lower().endswith((".jpg", ".jpeg", ".png")):
             img_path = os.path.join(folder_path, filename)
-            image = Image.open(img_path)
-            image = transform(image).unsqueeze(0).to(device)
+            try:
+                with Image.open(img_path) as image:
+                    image = transform(image).unsqueeze(0).to(device)
+            except Exception as e:
+                print(f"⚠️ Failed to open {img_path}: {e}")
+                continue
 
             with torch.no_grad():
                 output = model(image)

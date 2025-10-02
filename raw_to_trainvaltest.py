@@ -3,12 +3,12 @@ import shutil
 import random
 
 # -----------------------------
-# Import central config
+# Import config
 # -----------------------------
 from config import RAW_DIR, TRAIN_DIR, VAL_DIR, TEST_DIR, SPLIT_RATIO, CLASSES
 
 # -----------------------------
-# Helper: prepare clean folders
+# Prepare clean folders
 # -----------------------------
 def prepare_folders():
     for folder in [TRAIN_DIR, VAL_DIR, TEST_DIR]:
@@ -17,18 +17,21 @@ def prepare_folders():
         os.makedirs(folder, exist_ok=True)
 
 # -----------------------------
-# Helper: split one category
+# Split one category
 # -----------------------------
 def split_data(raw_path, class_name):
-    # Ensure class subfolders exist
+    # Ensure class subfolders exist in train/val/test
     for folder in [TRAIN_DIR, VAL_DIR, TEST_DIR]:
         class_folder = os.path.join(folder, class_name)
         os.makedirs(class_folder, exist_ok=True)
 
-    # Gather files
+    # Gather all images in raw folder
     files = [f for f in os.listdir(raw_path) if f.lower().endswith((".jpg", ".jpeg", ".png"))]
-    random.shuffle(files)
+    if not files:
+        print(f"⚠️ No images found for {class_name} in {raw_path}")
+        return
 
+    random.shuffle(files)
     n_total = len(files)
     n_train = int(SPLIT_RATIO[0] * n_total)
     n_val = int(SPLIT_RATIO[1] * n_total)
@@ -53,10 +56,12 @@ def split_data(raw_path, class_name):
 if __name__ == "__main__":
     prepare_folders()
 
-    # Loop through only defined categories (so order matches config.CLASSES)
+    # Loop through each category in RAW_DIR
     for category in CLASSES:
-        raw_path = os.path.join(RAW_DIR, category)
-        if os.path.isdir(raw_path):
-            split_data(raw_path, category)
+        raw_category_path = os.path.join(RAW_DIR, category)
+        if os.path.isdir(raw_category_path):
+            split_data(raw_category_path, category)
+        else:
+            print(f"⚠️ Raw folder for {category} does not exist: {raw_category_path}")
 
-    print("🎉 Data split complete! Ready for ImageFolder.")
+    print("🎉 Dataset split complete! Check data/train, data/val, data/test.")

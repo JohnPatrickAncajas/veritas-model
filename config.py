@@ -1,4 +1,3 @@
-# config.py
 import os
 import torch
 
@@ -24,12 +23,16 @@ PREDICT_DIR = os.path.join(PREDICT_ROOT, PREDICT_FOLDER_NAME)
 # Kaggle cache
 KAGGLE_CACHE = os.path.join(PROJECT_PATH, "kaggle_cache")
 
+# Google cache (for 2D/3D datasets)
+GOOGLE_CACHE = os.path.join(PROJECT_PATH, "google_cache")
+
 # -----------------------------
 # Model Paths
 # -----------------------------
 MODEL_DIR = os.path.join(PROJECT_PATH, "models")
-MODEL_NAME = "efficientnet_faces.pth"
-MODEL_PATH = os.path.join(MODEL_DIR, MODEL_NAME)
+MODEL_SAVE_DIR = MODEL_DIR
+MODEL_NAME = "efficientnet_faces"   # Just name, no .pth extension here
+MODEL_PATH = os.path.join(MODEL_SAVE_DIR, f"{MODEL_NAME}.pth")
 
 # -----------------------------
 # Classes (ORDER FIXED!)
