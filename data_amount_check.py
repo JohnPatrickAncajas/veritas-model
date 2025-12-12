@@ -3,7 +3,7 @@ import os
 # -----------------------------
 # Paths
 # -----------------------------
-BASE_DIR = r"C:\Users\Patrick\Documents\GitHub\veritas-model\data"
+BASE_DIR = r"D:\Programming\ProgrammingProjects\Veritas_DA_Project\veritas-model\data"
 SETS = ["raw", "train", "val", "test"]
 IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png")
 

@@ -4,7 +4,7 @@ import torch
 # -----------------------------
 # Project Base Path
 # -----------------------------
-PROJECT_PATH = r"C:\Users\Patrick\Documents\GitHub\veritas-model"
+PROJECT_PATH = r"D:\Programming\ProgrammingProjects\Veritas_DA_Project\veritas-model"
 
 # -----------------------------
 # Dataset Paths
@@ -31,7 +31,7 @@ GOOGLE_CACHE = os.path.join(PROJECT_PATH, "google_cache")
 # -----------------------------
 MODEL_DIR = os.path.join(PROJECT_PATH, "models")
 MODEL_SAVE_DIR = MODEL_DIR
-MODEL_NAME = "efficientnet_faces"   # Just name, no .pth extension here
+MODEL_NAME = "efficientnet_faces_vers_dec12"   # Just name, no .pth extension here
 MODEL_PATH = os.path.join(MODEL_SAVE_DIR, f"{MODEL_NAME}.pth")
 
 # -----------------------------

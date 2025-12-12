@@ -6,6 +6,8 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 from efficientnet_pytorch import EfficientNet
 import os
+import numpy as np
+from collections import Counter
 
 # ---------------------
 # Import config
@@ -29,7 +31,7 @@ else:
 print("Using device:", device)
 
 # ---------------------
-# Transforms (train augmentation)
+# Transforms (Enhanced augmentation)
 # ---------------------
 normalize = transforms.Normalize(
     mean=[0.485, 0.456, 0.406],
@@ -37,10 +39,13 @@ normalize = transforms.Normalize(
 )
 
 train_transforms = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.RandomHorizontalFlip(),
-    transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1),
-    transforms.RandomRotation(10),
+    transforms.Resize((256, 256)),  # Resize larger for random crop
+    transforms.RandomResizedCrop(224, scale=(0.8, 1.0)),  # Random crop for better generalization
+    transforms.RandomHorizontalFlip(p=0.5),
+    transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+    transforms.RandomRotation(15),
+    transforms.RandomAffine(degrees=0, translate=(0.1, 0.1)),  # Slight translation
+    transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0)),  # Random blur
     transforms.ToTensor(),
     normalize,
 ])
@@ -68,6 +73,25 @@ print("Val samples:", len(val_dataset))
 print("Test samples:", len(test_dataset))
 
 # ---------------------
+# Class Distribution & Weights
+# ---------------------
+# Calculate class distribution
+class_counts = Counter([label for _, label in train_dataset.samples])
+print("\nClass distribution in training set:")
+for idx, cls in enumerate(CLASSES):
+    count = class_counts.get(idx, 0)
+    print(f"  {cls}: {count} images")
+
+# Compute class weights for handling imbalance
+if len(class_counts) > 0:
+    total_samples = sum(class_counts.values())
+    class_weights = [total_samples / (len(CLASSES) * class_counts.get(i, 1)) for i in range(len(CLASSES))]
+    class_weights = torch.FloatTensor(class_weights).to(device)
+    print(f"\nClass weights: {class_weights.cpu().numpy()}")
+else:
+    class_weights = None
+
+# ---------------------
 # Model
 # ---------------------
 model = EfficientNet.from_pretrained('efficientnet-b0')
@@ -77,12 +101,23 @@ model = model.to(device)
 # ---------------------
 # Loss & Optimizer
 # ---------------------
-criterion = nn.CrossEntropyLoss()
+criterion = nn.CrossEntropyLoss(weight=class_weights)
 optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
+# Learning rate scheduler - reduces LR when validation loss plateaus
+scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+    optimizer, mode='min', factor=0.5, patience=3
+)
+
 # ---------------------
-# Training Loop
+# Training Loop with Early Stopping & Checkpointing
 # ---------------------
+best_val_acc = 0.0
+best_model_path = os.path.join(MODEL_SAVE_DIR, f"{MODEL_NAME}_best.pth")
+patience = 5
+patience_counter = 0
+min_delta = 0.01  # Minimum improvement to reset patience
+
 for epoch in range(NUM_EPOCHS):
     model.train()
     running_loss = 0.0
@@ -128,6 +163,37 @@ for epoch in range(NUM_EPOCHS):
           f"Train Acc: {epoch_acc:.2f}% "
           f"Val Loss: {val_loss:.4f} "
           f"Val Acc: {val_acc:.2f}%")
+    
+    # Learning rate scheduling
+    scheduler.step(val_loss)
+    
+    # Model checkpointing - save best model
+    if val_acc > best_val_acc + min_delta:
+        best_val_acc = val_acc
+        patience_counter = 0
+        os.makedirs(MODEL_SAVE_DIR, exist_ok=True)
+        torch.save(model.state_dict(), best_model_path)
+        print(f"✅ New best model saved! Val Acc: {val_acc:.2f}%")
+    else:
+        patience_counter += 1
+        print(f"⏳ No improvement for {patience_counter} epoch(s)")
+    
+    # Early stopping
+    if patience_counter >= patience:
+        print(f"\n🛑 Early stopping triggered! No improvement for {patience} epochs.")
+        print(f"Best validation accuracy: {best_val_acc:.2f}%")
+        break
+
+# ---------------------
+# Load Best Model for Testing
+# ---------------------
+print("\n" + "="*60)
+print("Loading best model for final evaluation...")
+if os.path.exists(best_model_path):
+    model.load_state_dict(torch.load(best_model_path, map_location=device))
+    print(f"✅ Loaded best model from {best_model_path}")
+else:
+    print("⚠️ Best model not found, using last epoch model")
 
 # ---------------------
 # Test Accuracy
@@ -143,12 +209,15 @@ with torch.no_grad():
         test_total += labels.size(0)
         test_correct += predicted.eq(labels).sum().item()
 test_acc = test_correct / test_total * 100
-print(f"Test Accuracy: {test_acc:.2f}%")
+print(f"\n📊 Final Test Accuracy: {test_acc:.2f}%")
 
 # ---------------------
-# Save model
+# Save Final Model
 # ---------------------
 os.makedirs(MODEL_SAVE_DIR, exist_ok=True)
-model_path = os.path.join(MODEL_SAVE_DIR, MODEL_NAME)
-torch.save(model.state_dict(), model_path)
-print(f"✅ Model saved to {model_path}")
+final_model_path = os.path.join(MODEL_SAVE_DIR, f"{MODEL_NAME}.pth")
+torch.save(model.state_dict(), final_model_path)
+print(f"✅ Final model saved to {final_model_path}")
+print(f"✅ Best model saved to {best_model_path}")
+print(f"\nBest validation accuracy achieved: {best_val_acc:.2f}%")
+print("="*60)

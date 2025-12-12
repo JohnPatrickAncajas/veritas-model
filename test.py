@@ -18,7 +18,18 @@ print(f"Using device: {device}")
 # ------------------------
 # Load model
 # ------------------------
-model_path = os.path.join(MODEL_SAVE_DIR, f"{MODEL_NAME}.pth")
+# Try to load the best model first, fallback to regular model
+best_model_path = os.path.join(MODEL_SAVE_DIR, f"{MODEL_NAME}_best.pth")
+regular_model_path = os.path.join(MODEL_SAVE_DIR, f"{MODEL_NAME}.pth")
+
+if os.path.exists(best_model_path):
+    model_path = best_model_path
+    print(f"✅ Loading best model: {best_model_path}")
+elif os.path.exists(regular_model_path):
+    model_path = regular_model_path
+    print(f"⚠️ Best model not found, loading regular model: {regular_model_path}")
+else:
+    raise FileNotFoundError(f"❌ No model found in {MODEL_SAVE_DIR}")
 
 # Use from_name to avoid downloading pretrained weights
 model = EfficientNet.from_name('efficientnet-b0')
