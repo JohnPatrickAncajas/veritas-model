@@ -15,7 +15,7 @@ from collections import Counter
 from config import (
     TRAIN_DIR, VAL_DIR, TEST_DIR,
     CLASSES, BATCH_SIZE, NUM_EPOCHS, LEARNING_RATE,
-    MODEL_NAME, MODEL_SAVE_DIR
+    MODEL_NAME, MODEL_SAVE_DIR, DROPOUT_RATE
 )
 
 # ---------------------
@@ -95,7 +95,11 @@ else:
 # Model
 # ---------------------
 model = EfficientNet.from_pretrained('efficientnet-b0')
-model._fc = nn.Linear(model._fc.in_features, len(CLASSES))
+# Add dropout for regularization
+model._fc = nn.Sequential(
+    nn.Dropout(p=DROPOUT_RATE),
+    nn.Linear(model._fc.in_features, len(CLASSES))
+)
 model = model.to(device)
 
 # ---------------------

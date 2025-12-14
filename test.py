@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 from torchvision import transforms
 from PIL import Image
 from efficientnet_pytorch import EfficientNet
@@ -7,7 +8,7 @@ import os
 # ------------------------
 # Import config
 # ------------------------
-from config import TEST_DIR, MODEL_SAVE_DIR, MODEL_NAME, CLASSES
+from config import TEST_DIR, MODEL_SAVE_DIR, MODEL_NAME, CLASSES, DROPOUT_RATE
 
 # ------------------------
 # Device
@@ -33,7 +34,11 @@ else:
 
 # Use from_name to avoid downloading pretrained weights
 model = EfficientNet.from_name('efficientnet-b0')
-model._fc = torch.nn.Linear(model._fc.in_features, len(CLASSES))
+# Match the training architecture with dropout
+model._fc = nn.Sequential(
+    nn.Dropout(p=DROPOUT_RATE),
+    nn.Linear(model._fc.in_features, len(CLASSES))
+)
 model.load_state_dict(torch.load(model_path, map_location=device))
 model = model.to(device)
 model.eval()

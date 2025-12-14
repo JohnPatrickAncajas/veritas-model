@@ -7,8 +7,6 @@ import random
 # -----------------------------
 from config import (
     PROJECT_PATH,
-    KAGGLE_CACHE,
-    GOOGLE_CACHE,
     CLASSES,
     MAX_RAW_IMAGES,
 )
@@ -16,12 +14,15 @@ from config import (
 # Set RAW_DIR inside data/raw
 RAW_DIR = os.path.join(PROJECT_PATH, "data", "raw")
 
-# Map dataset sources for each class
+# Dataset folder path
+DATASET_DIR = os.path.join(PROJECT_PATH, "dataset")
+
+# Map dataset sources for each class (now from dataset folder)
 CATEGORIES = {
-    "2d": "2D",                                  # From google_cache
-    "3d": "3D",                                  # From google_cache (may have subfolders)
-    "ai": "AI-face-detection-Dataset/AI",        # From kaggle_cache
-    "real": "real_and_fake_face/training_real",  # From kaggle_cache
+    "2d": "2d_dataset",
+    "3d": "3D_dataset",
+    "ai": "AI_dataset",
+    "real": "Real_dataset",
 }
 
 # -----------------------------
@@ -37,8 +38,8 @@ for category in CLASSES:
 # -----------------------------
 # Function to select & copy images
 # -----------------------------
-def select_and_copy(base_cache_path, subfolder, dest_folder, num_images):
-    base_path = os.path.join(base_cache_path, subfolder)
+def select_and_copy(dataset_folder, dest_folder, num_images):
+    base_path = os.path.join(DATASET_DIR, dataset_folder)
 
     files = []
     for root, _, filenames in os.walk(base_path):
@@ -66,13 +67,9 @@ def select_and_copy(base_cache_path, subfolder, dest_folder, num_images):
 total_selected = 0
 
 for category in CLASSES:
-    subfolder = CATEGORIES[category]
-
-    # Use google_cache for 2d/3d, kaggle_cache for ai/real
-    base_cache = GOOGLE_CACHE if category in ["2d", "3d"] else KAGGLE_CACHE
-
+    dataset_folder = CATEGORIES[category]
     dest_folder = os.path.join(RAW_DIR, category)
-    copied = select_and_copy(base_cache, subfolder, dest_folder, MAX_RAW_IMAGES)
+    copied = select_and_copy(dataset_folder, dest_folder, MAX_RAW_IMAGES)
     total_selected += copied
 
 print(f"🎉 Total images copied: {total_selected} (max {MAX_RAW_IMAGES * len(CLASSES)})")

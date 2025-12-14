@@ -5,7 +5,7 @@ from kaggle.api.kaggle_api_extended import KaggleApi
 # ------------------------
 # CONFIG
 # ------------------------
-PROJECT_PATH = r"C:\Users\Patrick\Documents\GitHub\veritas-model"
+PROJECT_PATH = r"D:\Programming\ProgrammingProjects\Veritas_DA_Project\veritas-model"
 
 # Separate cache
 KAGGLE_CACHE = os.path.join(PROJECT_PATH, "kaggle_cache")

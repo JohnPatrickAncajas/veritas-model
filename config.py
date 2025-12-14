@@ -17,7 +17,7 @@ VAL_DIR = os.path.join(DATA_DIR, "val")
 TEST_DIR = os.path.join(DATA_DIR, "test")
 
 PREDICT_ROOT = os.path.join(PROJECT_PATH, "predict")
-PREDICT_FOLDER_NAME = "predict_friends"
+PREDICT_FOLDER_NAME = "predict_dataset"
 PREDICT_DIR = os.path.join(PREDICT_ROOT, PREDICT_FOLDER_NAME)
 
 # Kaggle cache
@@ -31,7 +31,7 @@ GOOGLE_CACHE = os.path.join(PROJECT_PATH, "google_cache")
 # -----------------------------
 MODEL_DIR = os.path.join(PROJECT_PATH, "models")
 MODEL_SAVE_DIR = MODEL_DIR
-MODEL_NAME = "efficientnet_faces_vers_dec12"   # Just name, no .pth extension here
+MODEL_NAME = "efficientnet_faces_vers_dec14"   # Just name, no .pth extension here
 MODEL_PATH = os.path.join(MODEL_SAVE_DIR, f"{MODEL_NAME}.pth")
 
 # -----------------------------
@@ -43,15 +43,16 @@ CLASSES = ["2d", "3d", "ai", "real"]
 # Data Split
 # -----------------------------
 SPLIT_RATIO = (0.7, 0.2, 0.1)
-MAX_RAW_IMAGES = 700
+MAX_RAW_IMAGES = 600
 
 # -----------------------------
 # Training Hyperparameters
 # -----------------------------
 BATCH_SIZE = 16
 NUM_EPOCHS = 10
-LEARNING_RATE = 3e-4
+LEARNING_RATE = 1e-4
 IMG_SIZE = (224, 224)
+DROPOUT_RATE = 0.5  # Add dropout for regularization
 
 # -----------------------------
 # Device
